@@ -1,0 +1,39 @@
+# Build artifacts and generated files
+_build/
+build/
+*.hex
+*.elf
+*.p1
+*.o
+*.d
+*.cmf
+*.cof
+*.map
+*.sym
+*.s
+*.ll
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+*.cmake
+install_manifest.txt
+compile_commands.json
+
+# MPLAB X IDE
+nbproject/Makefile-*
+nbproject/Package-*
+nbproject/private/
+dist/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

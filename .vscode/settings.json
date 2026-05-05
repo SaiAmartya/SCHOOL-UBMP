@@ -1,0 +1,4 @@
+{
+    "mplab.clangd.compileCommandsDir": "${workspaceFolder}/_build/SCHOOL-UBMP/default",
+    "mplab.clangd.path": "/Applications/microchip/xc8/v3.10/bin/xc8-clangd"
+}

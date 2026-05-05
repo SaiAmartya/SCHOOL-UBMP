@@ -1,0 +1,47 @@
+### HEXMate logfile and output summary ###
+
+### Command-line arguments ###
+ /tmp/xcbPn59KN/driver_tmp_3.o
+ -O/Users/saiamartya/MPLABProjects/SCHOOL-UBMP/out/SCHOOL-UBMP/default.hex
+ -logfile=/Users/saiamartya/MPLABProjects/SCHOOL-UBMP/out/SCHOOL-UBMP/default.hxl
+ -addressing=2
+
+### Memory Usage ###
+ Input file ranges:
+  1000h - 1009h		(/tmp/xcbPn59KN/driver_tmp_3.o)
+  1F00h - 1FFFh		(/tmp/xcbPn59KN/driver_tmp_3.o)
+  1000Eh - 10011h		(/tmp/xcbPn59KN/driver_tmp_3.o)
+ Unused ranges:
+  0h - FFFh
+  100Ah - 1EFFh
+  2000h - 1000Dh
+
+### Hex Memory Map ###
+ Legend:
+  -- = Unused memory
+  H1 = Input file             (/tmp/xcbPn59KN/driver_tmp_3.o)
+----------------------------------------------------------
+         | 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+----------------------------------------------------------
+00001000 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 -- -- -- -- -- --
+----------------------------------------------------------
+00001F00 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F10 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F20 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F30 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F40 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F50 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F60 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F70 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F80 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001F90 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FA0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FB0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FC0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FD0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FE0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+00001FF0 | H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1 H1
+----------------------------------------------------------
+00010000 | -- -- -- -- -- -- -- -- -- -- -- -- -- -- H1 H1
+00010010 | H1 H1 -- -- -- -- -- -- -- -- -- -- -- -- -- --
+00010020 | --

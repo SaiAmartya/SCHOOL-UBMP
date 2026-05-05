@@ -1,0 +1,49 @@
+{
+    "version": "1.9",
+    "configurations": [
+        {
+            "name": "default",
+            "id": "",
+            "device": "PIC16F1459",
+            "imagePath": "./out/SCHOOL-UBMP/default.elf",
+            "toolProperties": "default-tool-base",
+            "tool": "Simulator",
+            "packs": [
+                {
+                    "name": "PIC12-16F1xxx_DFP",
+                    "vendor": "Microchip",
+                    "version": "1.9.258"
+                }
+            ],
+            "fileSet": "default",
+            "toolchain": "default-XC8"
+        }
+    ],
+    "propertyGroups": [
+        {
+            "name": "default-XC8",
+            "type": "toolchain",
+            "provider": "microchip.toolchains:xc8@3.10",
+            "properties": {
+                "HI-TECH-LINK.additional-options-code-offset": "800",
+                "HI-TECH-LINK.code-model-rom": "default,-7F0-7FF"
+            }
+        },
+        {
+            "name": "default-tool-base",
+            "type": "tool",
+            "properties": {}
+        }
+    ],
+    "fileSets": [
+        {
+            "name": "default",
+            "files": [
+                {
+                    "include": "**/*",
+                    "exclude": "**/(_build|out|cmake|.vscode)/**/*"
+                }
+            ]
+        }
+    ]
+}
