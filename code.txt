@@ -17,16 +17,10 @@ outputs
 int loop = 0;
 float distance = 0;
 
-// left motor: H8OUT = 1, H7OUT = 0
-// right motor: H6OUT = 1, H3OUT = 0
-
-
 // TODO Set linker ROM ranges to 'default,-0-7FF' under "Memory model" pull-down.
 // TODO Set linker code offset to '800' under "Additional options" pull-down.
 
 // The main function is required, and the program begins executing from here.
-
-// SUMO BOT CODE
 
 int main(void)
 {
@@ -38,7 +32,6 @@ int main(void)
     // Code in this while loop runs repeatedly.
     while(1)
 	{        
-
         // send pulse to ultrasonic sensor 
         H5OUT = 0; 
         __delay_us(5);
@@ -65,30 +58,46 @@ int main(void)
 
         // turn on both motors if distance is less than 30cm
         if (distance > 0 && distance < 30){
+            // run for a total of 2 seconds
 
-            // full power motor 1
-            H8OUT = 1; 
-            H7OUT = 0;
-
-            // full power motor 2
+            // full power 
+            H8OUT = 1;
             H6OUT = 1;
-            H3OUT = 0;
+            __delay_ms(500);
+
+            // 75% power for 500 ms
+            for (int i = 0; i < 5000; i++){
+                H8OUT = 1;
+                H6OUT = 1;
+                __delay_us(75);
+                H8OUT = 0;
+                H6OUT = 0;
+                __delay_us(25);
+            }
+            
+            // 50% power
+            for (int i = 0; i < 500; i++){
+                H8OUT = 1;
+                H6OUT = 1;
+                __delay_us(50);
+                H8OUT = 0;
+                H6OUT = 0;
+                __delay_us(50);
+            }
+
+            // 25% power
+            for (int i = 0; i < 5000; i++){
+                H8OUT = 1;
+                H6OUT = 1;
+                __delay_us(25);
+                H8OUT = 0;
+                H6OUT = 0;
+                __delay_us(75);
+            }
         }
         else {
-            // spin the robot in place searching for a target (50% speed)
             H8OUT = 0;
-            H3OUT = 0;
-
-            for (int i = 0; i < 10; i++) {
-                H7OUT = 1;
-                H6OUT = 1;
-                __delay_us(100);
-
-                H7OUT = 0;
-                H6OUT = 0;
-
-                __delay_us(100);
-            }
+            H6OUT = 0;
         }
 
         // Activate bootloader if SW1 is pressed.
