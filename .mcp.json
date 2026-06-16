@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "genouk-memory": {
+      "command": "node",
+      "args": [
+        "/Users/saiamartya/.vscode/extensions/genouk-dev.genouk-1.0.1/dist/mcpServer.js"
+      ],
+      "env": {
+        "GENOUK_REPO": "/Users/saiamartya/MPLABProjects/SCHOOL-UBMP"
+      }
+    }
+  }
+}
