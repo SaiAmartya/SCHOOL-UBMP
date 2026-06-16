@@ -1,7 +1,7 @@
 
 16F1459 Memory Summary:
-    Program space        used   24Ah (   586) of  2000h words   (  7.2%)
-    Data space           used    20h (    32) of   400h bytes   (  3.1%)
+    Program space        used   476h (  1142) of  2000h words   ( 13.9%)
+    Data space           used    24h (    36) of   400h bytes   (  3.5%)
     EEPROM space         None available
     Configuration bits   used     2h (     2) of     2h words   (100.0%)
     ID Location space    used     0h (     0) of     4h bytes   (  0.0%)

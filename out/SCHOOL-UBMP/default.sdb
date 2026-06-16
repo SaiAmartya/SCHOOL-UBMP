@@ -3,23 +3,43 @@
 [d edition pro ]
 [d chip 16F1459 ]
 [d frameptr 6 ]
+"431 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/main.c
+[e E2373 . `uc
+MODE_ADVANCED 1
+MODE_SIMPLE 2
+MODE_EXPERIMENTAL 3
+]
 "10 /Applications/microchip/xc8/v3.10/pic/sources/c99/common/sprcadd.c
 [v ___fladd __fladd `(d  1 e 4 0 ]
 "4 /Applications/microchip/xc8/v3.10/pic/sources/c99/common/Umul8_16.c
 [v __Umul8_16 _Umul8_16 `(ui  1 e 2 0 ]
-"100 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/main.c
+"107 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/main.c
 [v _pollKill pollKill `(v  1 e 1 0 ]
-"118
+"125
 [v _motorsStop motorsStop `(v  1 e 1 0 ]
-"132
+"137
 [v _drive drive `(v  1 e 1 0 ]
-"157
+"160
+[v _spin spin `(v  1 e 1 0 ]
+"169
+[v _curveForward curveForward `(v  1 e 1 0 ]
+"188
 [v _settle settle `(v  1 e 1 0 ]
-"172
+"202
 [v _ping ping `(us  1 e 2 0 ]
-"211
+"236
 [v _beepMs beepMs `(v  1 e 1 0 ]
-"224
+"253
+[v _runAdvanced runAdvanced `(v  1 e 1 0 ]
+"312
+[v _runSimple runSimple `(v  1 e 1 0 ]
+"358
+[v _runExperimental runExperimental `(v  1 e 1 0 ]
+"431
+[v _confirmMode confirmMode `(E2373  1 e 1 0 ]
+"449
+[v _selectMode selectMode `(E2373  1 e 1 0 ]
+"470
 [v _main main `(i  1 e 2 0 ]
 "21 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/UBMP420.c
 [v _OSC_config OSC_config `(v  1 e 1 0 ]
@@ -35,6 +55,15 @@
 "428 /Users/saiamartya/.mchp_packs/Microchip/PIC12-16F1xxx_DFP/1.9.258/xc8/pic/include/proc/pic16f1459.h
 [u S93 . 1 `S86 1 . 1 0 ]
 [v _PORTAbits PORTAbits `VES93  1 e 1 @12 ]
+[s S162 . 1 `uc 1 . 1 0 :4:0 
+`uc 1 RB4 1 0 :1:4 
+`uc 1 RB5 1 0 :1:5 
+`uc 1 RB6 1 0 :1:6 
+`uc 1 RB7 1 0 :1:7 
+]
+"472
+[u S168 . 1 `S162 1 . 1 0 ]
+[v _PORTBbits PORTBbits `VES168  1 e 1 @13 ]
 [s S126 . 1 `uc 1 RC0 1 0 :1:0 
 `uc 1 RC1 1 0 :1:1 
 `uc 1 RC2 1 0 :1:2 
@@ -120,93 +149,169 @@
 [v _GO GO `VEb  1 e 0 @1257 ]
 "6925
 [v _PLLRDY PLLRDY `VEb  1 e 0 @1238 ]
-"75 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/main.c
+"67 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/main.c
 [v _rampDuty rampDuty `DC[3]uc  1 s 3 rampDuty ]
-"94
+"100
 [v _killCount killCount `us  1 s 2 killCount ]
-"224
+"470
 [v _main main `(i  1 e 2 0 ]
 {
-"279
-[v main@duty_236 duty `uc  1 a 1 10 ]
+"487
+} 0
+"449
+[v _selectMode selectMode `(E2373  1 e 1 0 ]
+{
+"451
+[v selectMode@hb hb `us  1 a 2 12 ]
+"467
+} 0
+"431
+[v _confirmMode confirmMode `(E2373  1 e 1 0 ]
+{
+[v confirmMode@m m `E2373  1 p 1 wreg ]
+"434
+[v confirmMode@b b `uc  1 a 1 8 ]
+"431
+[v confirmMode@m m `E2373  1 p 1 wreg ]
+"433
+[v confirmMode@m m `E2373  1 p 1 9 ]
+"446
+} 1
+"312
+[v _runSimple runSimple `(v  1 e 1 0 ]
+{
+"318
+[v runSimple@ticks ticks `us  1 a 2 5 ]
+"319
+[v runSimple@present present `a  1 a 1 2 ]
+"314
+[v runSimple@ramming ramming `a  1 a 1 4 ]
+"339
+} 0
+"358
+[v _runExperimental runExperimental `(v  1 e 1 0 ]
+{
+"368
+[v runExperimental@ticks ticks `us  1 a 2 11 ]
+"369
+[v runExperimental@present present `a  1 a 1 9 ]
+"360
+[v runExperimental@turnCW turnCW `a  1 a 1 14 ]
+"364
+[v runExperimental@ramp ramp `uc  1 a 1 13 ]
+"361
+[v runExperimental@acquired acquired `a  1 a 1 10 ]
+"363
+[v runExperimental@lostRun lostRun `uc  1 a 1 8 ]
+"362
+[v runExperimental@wasPresent wasPresent `a  1 a 1 6 ]
+"426
+} 0
+"169
+[v _curveForward curveForward `(v  1 e 1 0 ]
+{
+[v curveForward@cw cw `a  1 p 1 wreg ]
+"171
+[v curveForward@inner inner `uc  1 a 1 5 ]
+"169
+[v curveForward@cw cw `a  1 p 1 wreg ]
+[v curveForward@fwd fwd `uc  1 p 1 13 ]
+"171
+[v curveForward@cw cw `a  1 p 1 2 ]
+"181
+} 1
+"253
+[v _runAdvanced runAdvanced `(v  1 e 1 0 ]
+{
+"285
+[v runAdvanced@duty_256 duty `uc  1 a 1 11 ]
+"278
+[v runAdvanced@duty duty `uc  1 a 1 10 ]
+"262
+[v runAdvanced@ticks ticks `us  1 a 2 12 ]
 "263
-[v main@duty duty `uc  1 a 1 9 ]
-"243
-[v main@ticks ticks `us  1 a 2 11 ]
-"244
-[v main@present present `a  1 a 1 8 ]
-"234
-[v main@locked locked `a  1 a 1 14 ]
-"231
-[v main@ramp ramp `uc  1 a 1 13 ]
-"233
-[v main@confirm confirm `uc  1 a 1 7 ]
-"232
-[v main@graceLeft graceLeft `uc  1 a 1 6 ]
-"235
-[v main@blink blink `uc  1 a 1 4 ]
-"304
+[v runAdvanced@present present `a  1 a 1 6 ]
+"257
+[v runAdvanced@locked locked `a  1 a 1 15 ]
+"255
+[v runAdvanced@ramp ramp `uc  1 a 1 14 ]
+"256
+[v runAdvanced@graceLeft graceLeft `uc  1 a 1 9 ]
+"258
+[v runAdvanced@blink blink `uc  1 a 1 7 ]
+"303
 } 0
-"157
-[v _settle settle `(v  1 e 1 0 ]
-{
 "160
-[v settle@i i `us  1 a 2 3 ]
-"157
-[v settle@ms ms `us  1 p 2 0 ]
-"165
-} 0
-"118
-[v _motorsStop motorsStop `(v  1 e 1 0 ]
+[v _spin spin `(v  1 e 1 0 ]
 {
-"122
-} 0
-"172
-[v _ping ping `(us  1 e 2 0 ]
-{
-"174
-[v ping@ticks ticks `us  1 a 2 4 ]
-"175
-[v ping@guard guard `us  1 a 2 2 ]
-"204
-} 0
-"132
+[v spin@cw cw `a  1 p 1 wreg ]
+[v spin@cw cw `a  1 p 1 wreg ]
+[v spin@duty duty `uc  1 p 1 0 ]
+[v spin@periods periods `uc  1 p 1 1 ]
+"162
+[v spin@cw cw `a  1 p 1 13 ]
+"163
+} 1
+"137
 [v _drive drive `(v  1 e 1 0 ]
 {
 [v drive@leftOn leftOn `uc  1 p 1 wreg ]
-"139
+"144
 [v drive@rOn rOn `a  1 a 1 11 ]
-"138
+"143
 [v drive@lOn lOn `a  1 a 1 10 ]
-"136
+"141
 [v drive@q q `uc  1 a 1 12 ]
-"134
+"139
 [v drive@p p `uc  1 a 1 5 ]
-"132
+"137
 [v drive@leftOn leftOn `uc  1 p 1 wreg ]
 [v drive@rightOn rightOn `uc  1 p 1 0 ]
 [v drive@leftFwd leftFwd `a  1 p 1 1 ]
 [v drive@rightFwd rightFwd `a  1 p 1 2 ]
 [v drive@periods periods `uc  1 p 1 3 ]
-"134
+"139
 [v drive@leftOn leftOn `uc  1 p 1 4 ]
-"150
+"155
 } 1
-"100
+"188
+[v _settle settle `(v  1 e 1 0 ]
+{
+"191
+[v settle@i i `us  1 a 2 3 ]
+"188
+[v settle@ms ms `us  1 p 2 0 ]
+"196
+} 0
+"107
 [v _pollKill pollKill `(v  1 e 1 0 ]
 {
-"113
+"120
 } 0
-"211
+"125
+[v _motorsStop motorsStop `(v  1 e 1 0 ]
+{
+"129
+} 0
+"202
+[v _ping ping `(us  1 e 2 0 ]
+{
+"204
+[v ping@ticks ticks `us  1 a 2 4 ]
+"205
+[v ping@guard guard `us  1 a 2 2 ]
+"231
+} 0
+"236
 [v _beepMs beepMs `(v  1 e 1 0 ]
 {
-"214
+"239
 [v beepMs@i i `us  1 a 2 5 ]
-"213
+"238
 [v beepMs@cycles cycles `us  1 a 2 3 ]
-"211
+"236
 [v beepMs@ms ms `us  1 p 2 0 ]
-"221
+"246
 } 0
 "29 /Users/saiamartya/MPLABProjects/SCHOOL-UBMP/UBMP420.c
 [v _UBMP4_config UBMP4_config `(v  1 e 1 0 ]
