@@ -7,16 +7,23 @@
  opponent. On power-up the bot sits in a MODE-SELECT menu (LED1 heartbeat-blinks)
  and waits for a button; it then beeps back 1/2/3 times and runs that mode:
 
-   SW2 -> ADVANCED   : stop-and-scan search, lock + soft-start charge, grace on
-                       dropout. The polished tracker. (beeps x1)
+   SW2 -> ADVANCED   : stop-and-scan search; on first detection nudge onto the
+                       target (ALIGN_NUDGE_PERIODS) then lock + soft-start charge,
+                       grace on dropout. The polished tracker. (beeps x1)
    SW3 -> SIMPLE     : slow nudge-and-pause spin (pauses so the sensor can
                        actually get an echo back); ram full power, no ramp, the
                        instant anything is inside the threshold. (beeps x2)
-   SW4 -> EXPERIMENTAL: "snake" tracker -- drive forward while gently turning;
-                       flip the turn direction every time the target leaves the
-                       beam, so the heading weaves around the target and keeps a
-                       MOVING opponent centred. Falls back to a spin-search if the
-                       target is truly lost. (beeps x3)
+   SW4 -> EXPERIMENTAL: "snake" tracker -- forward + turn, flipping turn direction
+                       each time the target leaves the beam. Rams straight once
+                       close (TICKS_COMMIT) and re-aims with in-place pivots when
+                       it loses the beam, so it drives THROUGH the opponent instead
+                       of circling it off the ring. (beeps x3)
+   SW5 -> EDGE-CENTER : like ADVANCED, but on first detection it sweeps across the
+                       opponent to find BOTH beam edges, centres head-on, then
+                       charges -- aims to ram dead-centre, not glance off. (beeps x4)
+
+ ALL modes: if ~2 full search spins find nothing, the bot reverses ~5cm for a new
+ vantage point and keeps scanning (toggle with backupEnabled).
 
  Press SW1 at any time to reset back to the menu (it is the bootloader button).
 
@@ -66,25 +73,52 @@
 #define RAMP_MAX            2     // soft-start steps (limits current inrush -> fewer brownouts)
 static const uint8_t rampDuty[RAMP_MAX + 1] = {7, 9, 10};  // soft-start -> full
 #define GRACE_CYCLES        2     // charge-straight bursts kept after a brief dropout
+#define ALIGN_NUDGE_PERIODS 20    // on first detection, turn ONTO the target (~ms) before ramming, so a
+                                  // beam-edge glance becomes a body hit. CRITICAL: this MUST be >=
+                                  // SEARCH_KICK_PERIODS (10). Below the stiction floor the kick only
+                                  // buzzes and the bot does NOT actually turn (the old 6 was the bug:
+                                  // it "paused in place" and rammed the edge). Raise to aim deeper into
+                                  // the body; lower (but keep >= ~10) if it overshoots. 0 = ram instantly.
+
+// ---- EDGE-CENTER (SW5): scan both edges of the opponent, centre, then ram ----
+#define EDGE_KICK_DUTY     10   // edge-scan spin duty (fast sweep across the opponent)
+#define EDGE_KICK_PERIODS  12   // ~ms per edge-scan step  -- also the centring step size (keep equal)
+#define EDGE_MAX           10   // cap on opponent-width steps (e.g. when facing a wall)
 
 // ---- SIMPLE (SW3): slow nudge-and-pause spin + full-power ram ---------------
-#define SIMPLE_KICK_DUTY    8    // firm nudge (breaks stiction) ...
-#define SIMPLE_KICK_PERIODS 5    // ... but very short, so each step is a small turn
-#define SIMPLE_PAUSE_MS     70   // long pause: lets the chassis stop AND the sensor echo back
+// The "slow" comes from the long PAUSE, NOT from a tiny kick. The kick must be
+// firm enough to actually break stiction and turn the chassis (a 5 ms kick from a
+// standstill just buzzed and didn't move) -- so it matches the proven SW2 step.
+#define SIMPLE_KICK_DUTY    9    // firm kick -- must break stiction from a standstill
+#define SIMPLE_KICK_PERIODS 10   // real turn step (was 5 = too short to move)
+#define SIMPLE_PAUSE_MS     70   // long pause: keeps the AVERAGE spin slow + lets the sensor echo back
 
 // ---- EXPERIMENTAL (SW4): "snake" / bang-bang edge tracker -------------------
-// Drive forward while gently turning; flip the turn direction whenever the target
-// drops out of the beam. The target always exits the side OPPOSITE the turn, so
-// flipping always steers back toward it -> the heading oscillates around the
-// target bearing. Keep the turn GENTLE so a 60 ms blind ping-gap can't overshoot
-// the beam in one step (that would make the weave coarse/unstable).
-#define SNAKE_TURN_CUT      3    // inner-wheel duty cut while curving  -- CALIBRATE (bigger = sharper weave)
+// Forward + turn, flipping the turn direction each time the target leaves the
+// beam (it exits the side OPPOSITE the turn, so flipping steers back toward it).
+// Two rules stop it from curving AROUND a close opponent and off the ring:
+//   1. Inside TICKS_COMMIT, stop weaving and ram DEAD STRAIGHT at full power.
+//   2. When the beam is lost, re-aim with an IN-PLACE pivot (REAIM_*), NOT a
+//      forward arc -- while hunting we rotate but don't translate, so a dodging
+//      opponent can't lead us off the edge. This is where the SHARP turn lives.
+#define SNAKE_TURN_CUT      4    // inner-wheel duty cut on the far approach  -- bigger = sharper snake
+#define TICKS_COMMIT        130  // inside this (~22cm) -> straight full-power ram  -- CALIBRATE (raise if it still orbits)
+#define REAIM_DUTY          9    // in-place re-aim pivot duty (sharp + decisive)
+#define REAIM_PERIODS       12   // ~ms per re-aim pivot step  -- too big can skip past the target
 #define LOST_LIMIT          5    // consecutive missed pings before giving up to a spin-search
 
 // ---- Audio / indicators -----------------------------------------------------
 #define LOCK_BEEP_MS       120   // "target locked" tone
 #define LOSS_BEEP_MS       60    // "lost target" tone
 #define BOOT_BEEP_MS       40    // power-on / menu-confirm chirp
+
+// ---- Stuck auto-backup (ALL modes) ------------------------------------------
+// If the bot makes ~2 full search spins with nothing in range, reverse ~5cm for a
+// fresh vantage point and keep scanning. Flip backupEnabled to false to disable.
+volatile bool backupEnabled = true; // <-- master ON/OFF for the auto-backup feature (flip by hand)
+#define BACKUP_AFTER_STEPS  320    // empty search steps (~2 spins) before backing up  -- CALIBRATE to your step size
+#define BACKUP_DUTY          8    // reverse speed for the un-stick backup
+#define BACKUP_PERIODS     150    // ~ms of reverse (~5cm at your speed)  -- CALIBRATE
 
 // ---- Misc -------------------------------------------------------------------
 #define SEARCH_CW          true  // default search spin direction (true = clockwise)
@@ -95,7 +129,7 @@ static const uint8_t rampDuty[RAMP_MAX + 1] = {7, 9, 10};  // soft-start -> full
 // TODO Set linker ROM ranges to 'default,-0-7FF' under "Memory model" pull-down.
 // TODO Set linker code offset to '800' under "Additional options" pull-down.
 
-typedef enum { MODE_ADVANCED = 1, MODE_SIMPLE = 2, MODE_EXPERIMENTAL = 3 } Mode;
+typedef enum { MODE_ADVANCED = 1, MODE_SIMPLE = 2, MODE_EXPERIMENTAL = 3, MODE_EDGECENTER = 4 } Mode;
 
 static uint16_t killCount = 0;  // SW1 debounce accumulator (file scope: persists)
 
@@ -245,10 +279,31 @@ void beepMs(uint16_t ms)
     }
 }
 
+static uint16_t searchMisses = 0;  // consecutive search steps with nothing in range (uint16: allows BACKUP_AFTER_STEPS > 255)
+
+//------------------------------------------------------------------------------
+// One search step (spin + settle), shared by every mode. Counts consecutive
+// empty scans and -- if backupEnabled -- reverses ~5cm after ~2 full spins, so
+// the bot doesn't get stuck spinning where the opponent is out of range. Reset
+// the counter (searchMisses = 0) wherever a target is detected.
+//------------------------------------------------------------------------------
+void searchScan(bool cw, uint8_t duty, uint8_t periods, uint16_t pauseMs)
+{
+    spin(cw, duty, periods);
+    settle(pauseMs);
+
+    if (backupEnabled && ++searchMisses >= BACKUP_AFTER_STEPS)
+    {
+        searchMisses = 0;
+        drive(BACKUP_DUTY, BACKUP_DUTY, false, false, BACKUP_PERIODS);  // reverse ~5cm
+        settle(SETTLE_MS);
+    }
+}
+
 //==============================================================================
 // MODE: ADVANCED  (SW2)
-// Stop-and-scan search; lock + beep; soft-start charge dead-straight; grace on a
-// brief dropout. Locks on the first in-range ping.
+// Stop-and-scan search; on first detection, nudge onto the target (alignment)
+// then lock + soft-start charge dead-straight; grace on a brief dropout.
 //==============================================================================
 void runAdvanced(void)
 {
@@ -264,8 +319,16 @@ void runAdvanced(void)
 
         if (present)
         {
+            searchMisses = 0;          // found something -> reset the stuck-counter
             if (!locked)
             {
+                // First detection is a beam-EDGE glance (misaligned). Turn ONTO the
+                // body first, THEN ram -- and we never lose the target we just saw
+                // (no 2nd-ping gate that could miss). The rotational momentum dies
+                // during the lock beep, so no separate settle is needed here.
+#if ALIGN_NUDGE_PERIODS > 0
+                spin(SEARCH_CW, SEARCH_KICK_DUTY, ALIGN_NUDGE_PERIODS);
+#endif
                 beepMs(LOCK_BEEP_MS);   // "target locked"
                 locked = true;
             }
@@ -296,8 +359,7 @@ void runAdvanced(void)
             blink ^= 1;
             LED1 = blink ? 0 : 1;      // slow blink = searching
 
-            spin(SEARCH_CW, SEARCH_KICK_DUTY, SEARCH_KICK_PERIODS);  // small scan step
-            settle(SETTLE_MS);                                       // stop, settle, then re-ping
+            searchScan(SEARCH_CW, SEARCH_KICK_DUTY, SEARCH_KICK_PERIODS, SETTLE_MS);
         }
     }
 }
@@ -320,6 +382,7 @@ void runSimple(void)
 
         if (present)
         {
+            searchMisses = 0;
             if (!ramming)
             {
                 beepMs(LOCK_BEEP_MS);  // target detected
@@ -332,32 +395,34 @@ void runSimple(void)
         {
             ramming = false;
             LED1 = 1;
-            spin(SEARCH_CW, SIMPLE_KICK_DUTY, SIMPLE_KICK_PERIODS);  // small slow nudge
-            settle(SIMPLE_PAUSE_MS);                                 // pause -> sensor can respond
+            // firm kick (turns reliably) + long pause (keeps it slow, lets the sensor respond)
+            searchScan(SEARCH_CW, SIMPLE_KICK_DUTY, SIMPLE_KICK_PERIODS, SIMPLE_PAUSE_MS);
         }
     }
 }
 
 //==============================================================================
-// MODE: EXPERIMENTAL  (SW4)  --  "snake" / bang-bang edge tracker
+// MODE: EXPERIMENTAL  (SW4)  --  "snake" / bang-bang edge tracker (anti-orbit)
 //
-// Drive forward while gently turning in the current direction. Each time the
-// target leaves the beam, INSTANTLY flip the turn direction. Because a target
-// exits the beam on the side opposite the turn, flipping always steers back
-// toward it -- so the heading snakes around the target bearing while the bot
-// keeps advancing, naturally keeping a MOVING opponent centred.
+// Core idea (yours): flip the turn direction each time the target leaves the
+// beam; since it exits the side opposite the turn, flipping always steers back.
+// Reworked so it stops curving AROUND a close opponent and driving off the ring:
 //
-//   target ahead, curving CW  -> target drifts to LEFT edge -> drops out
-//   flip to CCW                -> curve back left            -> target returns
-//   target drifts to RIGHT edge-> drops out -> flip to CW    -> ... repeat
+//   * FAR + in beam    -> drive forward, curving toward the target (the visible,
+//                         now-sharper snake; SNAKE_TURN_CUT sets how sharp).
+//   * CLOSE (< COMMIT)  -> stop weaving, ram DEAD STRAIGHT at full power. Drive
+//                         THROUGH the opponent instead of circling it.
+//   * LOST the beam     -> flip direction, then re-aim with an IN-PLACE PIVOT
+//                         (no forward travel) so a dodging opponent can't lead us
+//                         off the edge. Re-find within LOST_LIMIT or full-search.
 //
-// If the target is truly gone (the flip doesn't bring it back within LOST_LIMIT
-// pings), fall back to an in-place spin-search until it is re-found. The forward
-// speed soft-starts (rampDuty) -- it "accelerates forward" as you described.
+// Why not a sharper *continuous* weave? More lateral travel per blind 60 ms
+// ping-gap = a TIGHTER circle around the opponent = off the ring faster. The
+// sharpness that helps is the in-place re-aim, not the forward arc.
 //==============================================================================
 void runExperimental(void)
 {
-    bool    turnCW     = SEARCH_CW;   // current curve direction (true = CW / right)
+    bool    turnCW     = SEARCH_CW;   // current turn direction (true = CW / right)
     bool    acquired   = false;       // are we currently tracking a target?
     bool    wasPresent = false;       // target seen on the previous ping?
     uint8_t lostRun    = 0;           // consecutive missed pings while tracking
@@ -370,7 +435,7 @@ void runExperimental(void)
 
         if (present)
         {
-            // ---- Target in beam: advance, weaving toward it ----
+            searchMisses = 0;
             if (!acquired)
             {
                 beepMs(LOCK_BEEP_MS);
@@ -383,50 +448,144 @@ void runExperimental(void)
                 ramp++;
             }
 
-            if (ticks < TICKS_CONTACT)
+            if (ticks < TICKS_COMMIT)
             {
-                drive(DUTY_MAX, DUTY_MAX, true, true, CHARGE_PERIODS);  // point-blank: ram straight
+                // Close: COMMIT. Dead-straight, full power -- no turning, so we
+                // drive THROUGH the opponent instead of around it.
+                drive(DUTY_MAX, DUTY_MAX, true, true, CHARGE_PERIODS);
             }
             else
             {
-                curveForward(turnCW, rampDuty[ramp]);                   // forward + gentle turn
+                // Far: advance while curving toward the target (the snake).
+                curveForward(turnCW, rampDuty[ramp]);
             }
         }
         else if (acquired)
         {
-            // ---- Just lost the beam while tracking ----
+            // Lost the beam. Flip on the edge, then re-aim IN PLACE (no forward).
             if (wasPresent)
             {
-                turnCW = !turnCW;        // loss EDGE -> instantly flip turn direction
+                turnCW = !turnCW;
             }
             lostRun++;
 
             if (lostRun <= LOST_LIMIT)
             {
                 LED1 = 0;
-                curveForward(turnCW, rampDuty[ramp]);   // keep advancing the new way to re-find it
+                spin(turnCW, REAIM_DUTY, REAIM_PERIODS);   // sharp in-place re-aim pivot
+                settle(SETTLE_MS);
             }
             else
             {
-                acquired = false;        // really gone -> drop to search
+                acquired = false;        // really gone -> full search
                 ramp     = 0;
                 beepMs(LOSS_BEEP_MS);
             }
         }
         else
         {
-            // ---- Searching: in-place stop-and-scan spin until a target appears ----
+            // Searching: in-place stop-and-scan spin until a target appears.
             LED1 = 1;
-            spin(turnCW, SEARCH_KICK_DUTY, SEARCH_KICK_PERIODS);
-            settle(SETTLE_MS);
+            searchScan(turnCW, SEARCH_KICK_DUTY, SEARCH_KICK_PERIODS, SETTLE_MS);
         }
 
         wasPresent = present;
     }
 }
 
+//------------------------------------------------------------------------------
+// We have just caught the opponent at the EDGE of the beam. Keep spinning the
+// same way ACROSS it, counting steps until it drops off the far edge, then
+// reverse half those steps to sit roughly head-on. Single-sensor centroiding:
+// open-loop, so approximate -- but far better than ramming off a beam edge.
+//------------------------------------------------------------------------------
+void centerOnOpponent(bool scanDir)
+{
+    uint8_t seen = 1;                   // already seen at this (leading) edge
+    while (seen < EDGE_MAX)
+    {
+        spin(scanDir, EDGE_KICK_DUTY, EDGE_KICK_PERIODS);   // sweep fast across it
+        settle(SETTLE_MS);                                  // stop for a crisp ping
+        uint16_t t = ping();
+        if (t > 0 && t < TICKS_NEAR)
+        {
+            seen++;
+        }
+        else
+        {
+            break;                      // dropped out -> far edge found
+        }
+    }
+
+    uint8_t back = (uint8_t)((seen + 1) / 2);   // reverse to the middle of the span
+    for (uint8_t i = 0; i < back; i++)
+    {
+        spin(!scanDir, EDGE_KICK_DUTY, EDGE_KICK_PERIODS);  // turn back to centre
+        settle(SETTLE_MS);
+    }
+}
+
 //==============================================================================
-// Mode-select menu: confirm a button, beep 1/2/3 times, wait for release, run it.
+// MODE: EDGE-CENTER  (SW5)
+// Clone of ADVANCED, but on the FIRST detection (a beam-edge glance) it sweeps
+// across the opponent to find both edges, centres head-on, THEN charges. Aims to
+// hit dead-centre instead of glancing off the side.
+//==============================================================================
+void runEdgeCenter(void)
+{
+    uint8_t ramp      = 0;
+    uint8_t graceLeft = 0;
+    bool    locked    = false;
+    uint8_t blink     = 0;
+
+    while (1)
+    {
+        uint16_t ticks   = ping();
+        bool     present = (ticks > 0 && ticks < TICKS_NEAR);
+
+        if (present)
+        {
+            searchMisses = 0;
+            if (!locked)
+            {
+                beepMs(LOCK_BEEP_MS);
+                centerOnOpponent(SEARCH_CW);   // <-- the difference vs ADVANCED
+                locked = true;
+                ramp   = 0;
+            }
+            graceLeft = GRACE_CYCLES;
+            LED1      = 0;
+            if (ramp < RAMP_MAX)
+            {
+                ramp++;
+            }
+            uint8_t duty = (ticks < TICKS_CONTACT) ? DUTY_MAX : rampDuty[ramp];
+            drive(duty, duty, true, true, CHARGE_PERIODS);
+        }
+        else if (locked && graceLeft > 0)
+        {
+            graceLeft--;
+            LED1 = 0;
+            uint8_t duty = rampDuty[ramp];
+            drive(duty, duty, true, true, CHARGE_PERIODS);
+        }
+        else
+        {
+            if (locked)
+            {
+                beepMs(LOSS_BEEP_MS);
+            }
+            locked = false;
+            ramp   = 0;
+            blink ^= 1;
+            LED1 = blink ? 0 : 1;
+            searchScan(SEARCH_CW, SEARCH_KICK_DUTY, SEARCH_KICK_PERIODS, SETTLE_MS);
+        }
+    }
+}
+
+//==============================================================================
+// Mode-select menu: confirm a button, beep 1/2/3/4 times, wait for release, run.
 //==============================================================================
 Mode confirmMode(Mode m)
 {
@@ -436,7 +595,7 @@ Mode confirmMode(Mode m)
         settle(120);
         beepMs(BOOT_BEEP_MS);
     }
-    while (SW2 == 0 || SW3 == 0 || SW4 == 0)       // wait for release
+    while (SW2 == 0 || SW3 == 0 || SW4 == 0 || SW5 == 0)   // wait for release
     {
         __delay_ms(1);
         pollKill();
@@ -445,7 +604,7 @@ Mode confirmMode(Mode m)
     return m;
 }
 
-// Block (heartbeat-blinking LED1) until SW2/SW3/SW4 is pressed; return the mode.
+// Block (heartbeat-blinking LED1) until SW2/SW3/SW4/SW5 is pressed; return the mode.
 Mode selectMode(void)
 {
     uint16_t hb = 0;
@@ -455,6 +614,7 @@ Mode selectMode(void)
         if (SW2 == 0) { __delay_ms(25); if (SW2 == 0) return confirmMode(MODE_ADVANCED); }
         if (SW3 == 0) { __delay_ms(25); if (SW3 == 0) return confirmMode(MODE_SIMPLE); }
         if (SW4 == 0) { __delay_ms(25); if (SW4 == 0) return confirmMode(MODE_EXPERIMENTAL); }
+        if (SW5 == 0) { __delay_ms(25); if (SW5 == 0) return confirmMode(MODE_EDGECENTER); }
 
         __delay_ms(1);
         pollKill();
@@ -482,6 +642,7 @@ int main(void)
             case MODE_ADVANCED:     runAdvanced();     break;
             case MODE_SIMPLE:       runSimple();       break;
             case MODE_EXPERIMENTAL: runExperimental(); break;
+            case MODE_EDGECENTER:   runEdgeCenter();   break;
         }
     }
 }
